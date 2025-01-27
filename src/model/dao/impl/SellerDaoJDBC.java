@@ -14,8 +14,9 @@ import model.entities.Seller;
 
 public class SellerDaoJDBC implements SellerDao {
 
-	//dependência para forçar conexão
+	// dependência para forçar conexão
 	private Connection conn;
+
 	public SellerDaoJDBC(Connection conn) {
 		this.conn = conn;
 	}
@@ -39,42 +40,52 @@ public class SellerDaoJDBC implements SellerDao {
 	public Seller findById(Integer id) {
 		PreparedStatement st = null;
 		ResultSet rs = null;
-		
+
 		try {
 			st = conn.prepareStatement(
-					"SELECT seller.*,department.Name as DepName "
-					+ "FROM seller INNER JOIN department "
-					+ "ON seller.DepartmentId = department.Id "
-					+ "WHERE seller.Id = ? ");
-			
+					"SELECT seller.*,department.Name as DepName " + "FROM seller INNER JOIN department "
+							+ "ON seller.DepartmentId = department.Id " + "WHERE seller.Id = ? ");
+
 			st.setInt(1, id);
 			rs = st.executeQuery();
-			
-			if(rs.next()) {
-				// repassando os dados que esta no resultset para o objeto department
-				Department dep = new Department();
-				dep.setId(rs.getInt("DepartmentId"));
-				dep.setName("DepName");
+
+			if (rs.next()) {
+				// repassando os dados para o objeto department
+				Department dep = instantiateDepartment(rs);
 				
-				// repassando os dados que esta no resultset para o objeto seller
-				Seller obj = new Seller();
-				obj.setId(rs.getInt("DepartmentId"));
-				obj.setName("Name");
-				obj.setEmail("Email");
-				obj.setBaseSalary(rs.getDouble("BaseSalary"));
-				obj.setBirthDate(rs.getDate("BirthDate"));
-				obj.setDepartment(dep);
+				// repassando os dados para o objeto seller
+				Seller obj = instantiateSeller(rs, dep);
 				return obj;
 			}
 			return null;
 			
-		}catch(SQLException e){
+
+		} catch (SQLException e) {
 			throw new DbException(e.getMessage());
-		}finally {
+		} finally {
 			DB.closeStatement(st);
 			DB.closeResultSet(rs);
 		}
 
+	}
+
+	private Seller instantiateSeller(ResultSet rs, Department dep) throws SQLException {
+		Seller obj = new Seller();
+		obj.setId(rs.getInt("DepartmentId"));
+		obj.setName("Name");
+		obj.setEmail("Email");
+		obj.setBaseSalary(rs.getDouble("BaseSalary"));
+		obj.setBirthDate(rs.getDate("BirthDate"));
+		obj.setDepartment(dep);
+		return obj;
+	}
+
+	// método para reutilização de instaciação do Department
+	private Department instantiateDepartment(ResultSet rs) throws SQLException {
+		Department dep = new Department();
+		dep.setId(rs.getInt("DepartmentId"));
+		dep.setName("DepName");
+		return dep;
 	}
 
 	@Override
